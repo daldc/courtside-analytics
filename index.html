@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Courtside Analytics — Transfer Portal Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-primary:#0a0c10;
+  --bg-secondary:#12151c;
+  --bg-card:#161a24;
+  --bg-card-hover:#1c2130;
+  --bg-surface:#1e2233;
+  --border:#252a3a;
+  --border-accent:#2d3348;
+  --text-primary:#e8eaf0;
+  --text-secondary:#8b91a8;
+  --text-muted:#565d78;
+  --accent-orange:#f97316;
+  --accent-amber:#fbbf24;
+  --accent-cyan:#22d3ee;
+  --accent-emerald:#34d399;
+  --accent-rose:#fb7185;
+  --accent-violet:#a78bfa;
+  --glow-orange:rgba(249,115,22,0.15);
+  --glow-cyan:rgba(34,211,238,0.12);
+  --font-display:'Bebas Neue',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --radius:10px;
+  --radius-lg:16px;
+}
+html{scroll-behavior:smooth;background:var(--bg-primary)}
+body{
+  font-family:var(--font-body);
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Noise texture overlay */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.4;
+}
+
+/* Ambient glow */
+.ambient-glow{
+  position:fixed;top:-200px;right:-200px;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+.ambient-glow-2{
+  position:fixed;bottom:-300px;left:-200px;width:700px;height:700px;
+  background:radial-gradient(circle,rgba(34,211,238,0.04) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+/* Layout */
+.container{max-width:1440px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+
+/* Header */
+.header{
+  padding:28px 0;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,12,16,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-mark{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,var(--accent-orange),#ea580c);
+  border-radius:10px;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:24px;color:#fff;
+  box-shadow:0 0 24px rgba(249,115,22,0.3);
+  position:relative;
+}
+.logo-mark::after{
+  content:'';position:absolute;inset:-2px;
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(249,115,22,0.4),transparent);
+  z-index:-1;filter:blur(8px);
+}
+.logo-text{
+  font-family:var(--font-display);
+  font-size:28px;letter-spacing:3px;
+  color:var(--text-primary);
+  line-height:1;
+}
+.logo-sub{
+  font-family:var(--font-mono);
+  font-size:10px;letter-spacing:2px;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  margin-top:2px;
+}
+.header-nav{display:flex;align-items:center;gap:8px}
+.nav-pill{
+  padding:8px 18px;border-radius:20px;
+  font-size:13px;font-weight:500;
+  color:var(--text-secondary);
+  cursor:pointer;transition:all 0.2s;
+  border:1px solid transparent;
+  background:transparent;
+  font-family:var(--font-body);
+}
+.nav-pill:hover{color:var(--text-primary);background:var(--bg-card)}
+.nav-pill.active{
+  color:var(--accent-orange);
+  background:var(--glow-orange);
+  border-color:rgba(249,115,22,0.2);
+}
+.live-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  background:rgba(34,197,94,0.1);
+  border:1px solid rgba(34,197,94,0.2);
+  font-family:var(--font-mono);font-size:11px;
+  color:#4ade80;letter-spacing:1px;
+}
+.live-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#4ade80;
+  animation:pulse-live 2s ease-in-out infinite;
+}
+@keyframes pulse-live{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,0.4)}
+  50%{opacity:0.6;box-shadow:0 0 0 6px rgba(74,222,128,0)}
+}
+
+/* Summary Stats Bar */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  margin:32px 0;
+  background:var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.stat-cell{
+  background:var(--bg-secondary);
+  padding:28px 32px;
+  position:relative;
+  overflow:hidden;
+}
+.stat-cell:first-child{border-radius:var(--radius-lg) 0 0 var(--radius-lg)}
+.stat-cell:last-child{border-radius:0 var(--radius-lg) var(--radius-lg) 0}
+.stat-cell::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent-orange),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.stat-cell:hover::before{opacity:1}
+.stat-number{
+  font-family:var(--font-display);
+  font-size:42px;letter-spacing:2px;
+  color:var(--text-primary);
+  line-height:1;
+}
+.stat-number .accent{color:var(--accent-orange)}
+.stat-label{
+  font-size:12px;letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  margin-top:8px;
+  font-weight:500;
+}
+
+/* Section Headers */
+.section{margin:48px 0}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:32px;letter-spacing:3px;
+  color:var(--text-primary);
+  display:flex;align-items:center;gap:12px;
+}
+.section-title .icon{
+  width:32px;height:32px;border-radius:8px;
+  display:grid;place-items:center;font-size:16px;
+}
+.section-tag{
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:1px;color:var(--text-muted);
+  padding:4px 10px;
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+
+/* Controls Bar */
+.controls{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:20px;flex-wrap:wrap;
+}
+.search-box{
+  flex:1;min-width:240px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 16px 12px 42px;
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  font-size:14px;
+  transition:border-color 0.2s;
+  position:relative;
+}
+.search-box:focus{outline:none;border-color:var(--accent-orange)}
+.search-wrap{position:relative;flex:1;min-width:240px}
+.search-wrap::before{
+  content:'⌕';position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--text-muted);font-size:16px;pointer-events:none;
+}
+.search-wrap .search-box{width:100%}
+.filter-btn{
+  padding:10px 18px;border-radius:var(--radius);
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-secondary);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+  font-family:var(--font-body);
+  display:flex;align-items:center;gap:6px;
+}
+.filter-btn:hover{border-color:var(--accent-orange);color:var(--text-primary)}
+.filter-btn.active{
+  background:var(--glow-orange);border-color:rgba(249,115,22,0.3);
+  color:var(--accent-orange);
+}
+.sort-select{
+  padding:10px 14px;border-radius:var(--radius);
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-secondary);font-size:13px;
+  cursor:pointer;font-family:var(--font-body);
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b91a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+}
+.sort-select:focus{outline:none;border-color:var(--accent-orange)}
+
+/* Portal Table */
+.portal-table-wrap{
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.portal-table{width:100%;border-collapse:collapse}
+.portal-table thead{background:var(--bg-card)}
+.portal-table th{
+  padding:14px 16px;
+  font-size:10px;letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  font-weight:600;text-align:left;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;user-select:none;
+  white-space:nowrap;
+  transition:color 0.2s;
+}
+.portal-table th:hover{color:var(--text-secondary)}
+.portal-table th.sorted{color:var(--accent-orange)}
+.portal-table th .sort-arrow{margin-left:4px;font-size:8px;opacity:0.5}
+.portal-table th.sorted .sort-arrow{opacity:1}
+.portal-table td{
+  padding:14px 16px;
+  font-size:14px;
+  border-bottom:1px solid rgba(37,42,58,0.5);
+  white-space:nowrap;
+}
+.portal-table tbody tr{transition:background 0.15s}
+.portal-table tbody tr:hover{background:var(--bg-card-hover)}
+.player-name{
+  font-weight:600;color:var(--text-primary);
+  display:flex;align-items:center;gap:10px;
+}
+.player-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--bg-surface),var(--border-accent));
+  display:grid;place-items:center;
+  font-size:13px;font-weight:700;
+  color:var(--text-secondary);
+  flex-shrink:0;
+}
+.school-tag{
+  font-size:12px;color:var(--text-secondary);
+  font-weight:400;
+}
+.pos-badge{
+  display:inline-block;
+  padding:3px 10px;border-radius:4px;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  background:var(--bg-surface);
+  color:var(--text-secondary);
+}
+.stat-val{
+  font-family:var(--font-mono);font-size:13px;
+  color:var(--text-secondary);
+}
+.stat-val.highlight{color:var(--accent-amber)}
+.gem-score{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:14px;font-weight:600;
+}
+.gem-bar{
+  width:48px;height:5px;border-radius:3px;
+  background:var(--bg-surface);overflow:hidden;
+}
+.gem-bar-fill{
+  height:100%;border-radius:3px;
+  transition:width 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+.gem-tier-elite{color:var(--accent-orange)}
+.gem-tier-elite .gem-bar-fill{background:linear-gradient(90deg,var(--accent-orange),var(--accent-amber))}
+.gem-tier-high{color:var(--accent-cyan)}
+.gem-tier-high .gem-bar-fill{background:var(--accent-cyan)}
+.gem-tier-mid{color:var(--accent-emerald)}
+.gem-tier-mid .gem-bar-fill{background:var(--accent-emerald)}
+.gem-tier-low{color:var(--text-muted)}
+.gem-tier-low .gem-bar-fill{background:var(--text-muted)}
+.conf-tag{
+  font-size:11px;color:var(--text-muted);
+  font-family:var(--font-mono);letter-spacing:0.5px;
+}
+.year-tag{
+  font-size:12px;padding:2px 8px;border-radius:3px;
+  background:var(--bg-surface);color:var(--text-secondary);
+  font-weight:500;
+}
+
+/* Hidden Gem Spotlight */
+.gems-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.gem-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:28px;
+  position:relative;overflow:hidden;
+  transition:all 0.3s;
+}
+.gem-card:hover{
+  border-color:rgba(249,115,22,0.3);
+  transform:translateY(-2px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.3);
+}
+.gem-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent-orange),var(--accent-amber));
+}
+.gem-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.gem-player-info{display:flex;align-items:center;gap:14px}
+.gem-avatar{
+  width:52px;height:52px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(251,191,36,0.1));
+  border:1px solid rgba(249,115,22,0.2);
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:22px;
+  color:var(--accent-orange);
+}
+.gem-player-name{font-size:18px;font-weight:700;color:var(--text-primary)}
+.gem-player-meta{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.gem-score-ring{
+  width:56px;height:56px;position:relative;
+}
+.gem-score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gem-score-ring circle{fill:none;stroke-width:4}
+.gem-score-ring .bg{stroke:var(--bg-surface)}
+.gem-score-ring .fg{
+  stroke:var(--accent-orange);
+  stroke-linecap:round;
+  transition:stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1);
+}
+.gem-score-value{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--font-display);font-size:20px;
+  color:var(--accent-orange);
+}
+.gem-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  margin-bottom:18px;
+}
+.gem-stat{
+  background:var(--bg-surface);border-radius:8px;padding:12px;
+  text-align:center;
+}
+.gem-stat-val{
+  font-family:var(--font-mono);font-size:18px;font-weight:600;
+  color:var(--text-primary);
+}
+.gem-stat-label{
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text-muted);margin-top:2px;
+}
+.gem-insight{
+  background:var(--bg-surface);border-radius:8px;
+  padding:14px;
+  border-left:3px solid var(--accent-orange);
+}
+.gem-insight-label{
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--accent-orange);font-weight:600;margin-bottom:6px;
+}
+.gem-insight-text{
+  font-size:13px;color:var(--text-secondary);line-height:1.5;
+}
+
+/* International Module */
+.intl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.intl-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:24px;
+  transition:all 0.3s;
+  position:relative;
+}
+.intl-card:hover{
+  border-color:rgba(34,211,238,0.3);
+  transform:translateY(-2px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.3);
+}
+.intl-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent-cyan),var(--accent-violet));
+}
+.intl-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.intl-flag{
+  width:44px;height:44px;border-radius:12px;
+  background:var(--bg-surface);
+  display:grid;place-items:center;font-size:22px;
+  border:1px solid var(--border);
+}
+.intl-name{font-size:16px;font-weight:700;color:var(--text-primary)}
+.intl-meta{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.intl-stats{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+  margin-bottom:14px;
+}
+.intl-stat{
+  background:var(--bg-surface);border-radius:6px;padding:10px 12px;
+}
+.intl-stat-val{
+  font-family:var(--font-mono);font-size:15px;font-weight:600;
+  color:var(--text-primary);
+}
+.intl-stat-label{
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.intl-equiv{
+  background:rgba(34,211,238,0.05);
+  border:1px solid rgba(34,211,238,0.15);
+  border-radius:8px;padding:12px;
+  font-size:12px;color:var(--accent-cyan);
+  font-family:var(--font-mono);
+}
+.intl-equiv strong{color:var(--text-primary)}
+
+/* Roster Fit Tool */
+.roster-section{
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:32px;
+}
+.roster-controls{
+  display:flex;gap:16px;align-items:end;
+  margin-bottom:28px;flex-wrap:wrap;
+}
+.roster-field{display:flex;flex-direction:column;gap:6px}
+.roster-field label{
+  font-size:11px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--text-muted);font-weight:600;
+}
+.roster-select{
+  padding:12px 16px;border-radius:var(--radius);
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-primary);font-size:14px;
+  font-family:var(--font-body);
+  min-width:240px;cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b91a8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  padding-right:36px;
+}
+.roster-select:focus{outline:none;border-color:var(--accent-orange)}
+.analyze-btn{
+  padding:12px 28px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--accent-orange),#ea580c);
+  border:none;color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+  font-family:var(--font-body);
+  box-shadow:0 4px 16px rgba(249,115,22,0.3);
+}
+.analyze-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 24px rgba(249,115,22,0.4);
+}
+.roster-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.roster-match{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+  display:flex;align-items:center;gap:16px;
+  transition:all 0.2s;
+}
+.roster-match:hover{border-color:var(--border-accent)}
+.match-score{
+  width:48px;height:48px;border-radius:12px;
+  display:grid;place-items:center;
+  font-family:var(--font-display);font-size:22px;
+  flex-shrink:0;
+}
+.match-excellent{background:rgba(249,115,22,0.15);color:var(--accent-orange);border:1px solid rgba(249,115,22,0.2)}
+.match-good{background:rgba(34,211,238,0.1);color:var(--accent-cyan);border:1px solid rgba(34,211,238,0.15)}
+.match-decent{background:rgba(52,211,153,0.1);color:var(--accent-emerald);border:1px solid rgba(52,211,153,0.15)}
+.match-info h4{font-size:15px;font-weight:600;color:var(--text-primary)}
+.match-info p{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.match-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.match-tag{
+  font-size:10px;padding:3px 8px;border-radius:3px;
+  background:var(--bg-surface);color:var(--text-muted);
+  font-family:var(--font-mono);letter-spacing:0.5px;
+}
+.match-tag.need{color:var(--accent-rose);background:rgba(251,113,133,0.1)}
+.match-tag.fit{color:var(--accent-emerald);background:rgba(52,211,153,0.1)}
+
+/* Footer */
+.footer{
+  padding:40px 0;margin-top:64px;
+  border-top:1px solid var(--border);
+  text-align:center;
+}
+.footer-text{font-size:12px;color:var(--text-muted);letter-spacing:1px}
+.footer-text a{color:var(--accent-orange);text-decoration:none}
+
+/* Animations */
+@keyframes fade-up{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.animate-in{animation:fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both}
+.delay-1{animation-delay:0.1s}
+.delay-2{animation-delay:0.2s}
+.delay-3{animation-delay:0.3s}
+.delay-4{animation-delay:0.4s}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg-primary)}
+::-webkit-scrollbar-thumb{background:var(--border-accent);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* Responsive */
+@media(max-width:1024px){
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .stat-cell:first-child{border-radius:var(--radius-lg) 0 0 0}
+  .stat-cell:nth-child(2){border-radius:0 var(--radius-lg) 0 0}
+  .stat-cell:nth-child(3){border-radius:0}
+  .stat-cell:last-child{border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+}
+@media(max-width:768px){
+  .container{padding:0 16px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .stat-number{font-size:32px}
+  .header-nav{display:none}
+  .portal-table-wrap{overflow-x:auto}
+  .section-title{font-size:24px}
+  .gems-grid{grid-template-columns:1fr}
+  .roster-controls{flex-direction:column}
+  .roster-select{min-width:100%}
+}
+
+/* Table scroll container */
+.table-scroll{overflow-x:auto}
+
+/* Hidden Gem label */
+.gem-label{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  font-weight:700;color:var(--accent-amber);
+  padding:3px 8px;border-radius:4px;
+  background:rgba(251,191,36,0.1);
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow"></div>
+<div class="ambient-glow-2"></div>
+
+<!-- HEADER -->
+<header class="header">
+<div class="container header-inner">
+  <div class="logo">
+    <div class="logo-mark">C</div>
+    <div>
+      <div class="logo-text">COURTSIDE ANALYTICS</div>
+      <div class="logo-sub">Transfer Portal Intelligence</div>
+    </div>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-pill active" onclick="scrollToSection('portal')">Portal Feed</button>
+    <button class="nav-pill" onclick="scrollToSection('gems')">Hidden Gems</button>
+    <button class="nav-pill" onclick="scrollToSection('intl')">International</button>
+    <button class="nav-pill" onclick="scrollToSection('roster')">Roster Fit</button>
+    <div class="live-badge"><div class="live-dot"></div>LIVE DATA</div>
+  </nav>
+</div>
+</header>
+
+<main class="container">
+
+<!-- SUMMARY STATS -->
+<div class="stats-bar animate-in">
+  <div class="stat-cell">
+    <div class="stat-number">2<span class="accent">,</span>320</div>
+    <div class="stat-label">Portal Entries Tracked</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-number">147</div>
+    <div class="stat-label">Hidden Gems Identified</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-number">89</div>
+    <div class="stat-label">International Prospects</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-number" style="font-size:28px;padding-top:6px">REAL<span class="accent">-</span>TIME</div>
+    <div class="stat-label">Data Pipeline Status</div>
+  </div>
+</div>
+
+<!-- TRANSFER PORTAL FEED -->
+<section class="section animate-in delay-1" id="portal">
+  <div class="section-header">
+    <h2 class="section-title">
+      <span class="icon" style="background:var(--glow-orange);color:var(--accent-orange)">⟳</span>
+      TRANSFER PORTAL FEED
+    </h2>
+    <span class="section-tag">2025-26 CYCLE</span>
+  </div>
+  <div class="controls">
+    <div class="search-wrap">
+      <input class="search-box" type="text" placeholder="Search players, schools, conferences..." id="playerSearch" oninput="filterTable()">
+    </div>
+    <select class="sort-select" id="posFilter" onchange="filterTable()">
+      <option value="">All Positions</option>
+      <option value="PG">PG</option>
+      <option value="SG">SG</option>
+      <option value="SF">SF</option>
+      <option value="PF">PF</option>
+      <option value="C">C</option>
+    </select>
+    <select class="sort-select" id="confFilter" onchange="filterTable()">
+      <option value="">All Conferences</option>
+      <option value="C-USA">C-USA</option>
+      <option value="Sun Belt">Sun Belt</option>
+      <option value="MVC">MVC</option>
+      <option value="MAC">MAC</option>
+      <option value="Horizon">Horizon</option>
+      <option value="CAA">CAA</option>
+      <option value="Big South">Big South</option>
+      <option value="ASUN">ASUN</option>
+      <option value="Southland">Southland</option>
+      <option value="OVC">OVC</option>
+      <option value="WAC">WAC</option>
+      <option value="Summit">Summit</option>
+      <option value="Patriot">Patriot</option>
+      <option value="NEC">NEC</option>
+      <option value="Big Sky">Big Sky</option>
+    </select>
+    <button class="filter-btn" id="gemFilterBtn" onclick="toggleGemFilter()">
+      💎 Gems Only
+    </button>
+  </div>
+  <div class="portal-table-wrap">
+    <div class="table-scroll">
+      <table class="portal-table" id="portalTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">Player <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(1)">School <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(2)">Pos <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(3)" class="sorted">Gem Score <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(4)">PPG <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(5)">RPG <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(6)">APG <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(7)">FG% <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(8)">3P% <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(9)">Year <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable(10)">Conf <span class="sort-arrow">▼</span></th>
+          </tr>
+        </thead>
+        <tbody id="portalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- HIDDEN GEM SPOTLIGHT -->
+<section class="section animate-in delay-2" id="gems">
+  <div class="section-header">
+    <h2 class="section-title">
+      <span class="icon" style="background:rgba(251,191,36,0.12);color:var(--accent-amber)">💎</span>
+      HIDDEN GEM SPOTLIGHT
+    </h2>
+    <span class="section-tag">AI-SCORED ANALYSIS</span>
+  </div>
+  <div class="gems-grid" id="gemsGrid"></div>
+</section>
+
+<!-- INTERNATIONAL MODULE -->
+<section class="section animate-in delay-3" id="intl">
+  <div class="section-header">
+    <h2 class="section-title">
+      <span class="icon" style="background:var(--glow-cyan);color:var(--accent-cyan)">🌍</span>
+      INTERNATIONAL TALENT
+    </h2>
+    <span class="section-tag">NCAA-EQUIVALENT PROJECTIONS</span>
+  </div>
+  <div class="intl-grid" id="intlGrid"></div>
+</section>
+
+<!-- ROSTER FIT TOOL -->
+<section class="section animate-in delay-4" id="roster">
+  <div class="section-header">
+    <h2 class="section-title">
+      <span class="icon" style="background:rgba(167,139,250,0.12);color:var(--accent-violet)">🧩</span>
+      ROSTER FIT TOOL
+    </h2>
+    <span class="section-tag">BETA</span>
+  </div>
+  <div class="roster-section">
+    <div class="roster-controls">
+      <div class="roster-field">
+        <label>Select Your Program</label>
+        <select class="roster-select" id="programSelect" onchange="updateRosterFit()">
+          <option value="">Choose a program...</option>
+          <option value="uab">UAB Blazers</option>
+          <option value="vcu">VCU Rams</option>
+          <option value="loyola">Loyola Chicago Ramblers</option>
+          <option value="mtsu">Middle Tennessee Blue Raiders</option>
+          <option value="ohio">Ohio Bobcats</option>
+          <option value="uncw">UNC Wilmington Seahawks</option>
+          <option value="belmont">Belmont Bruins</option>
+          <option value="drake">Drake Bulldogs</option>
+        </select>
+      </div>
+      <div class="roster-field">
+        <label>Primary Need</label>
+        <select class="roster-select" id="needSelect" onchange="updateRosterFit()">
+          <option value="">Any Position</option>
+          <option value="PG">Point Guard</option>
+          <option value="SG">Shooting Guard</option>
+          <option value="SF">Small Forward</option>
+          <option value="PF">Power Forward</option>
+          <option value="C">Center</option>
+        </select>
+      </div>
+      <button class="analyze-btn" onclick="updateRosterFit()">Analyze Fit →</button>
+    </div>
+    <div class="roster-results" id="rosterResults">
+      <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted);font-size:14px">
+        Select a program above to see recommended portal fits
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer-text">COURTSIDE ANALYTICS — Transfer Portal Intelligence Platform &nbsp;·&nbsp; Demo Preview &nbsp;·&nbsp; <a href="#">Request Early Access</a></p>
+  </div>
+</footer>
+
+<script>
+// ── MOCK DATA ──
+const portalPlayers = [
+  { name:"Marcus Jeffries", school:"Western Kentucky", pos:"PG", ppg:16.2, rpg:3.1, apg:5.8, fg:44.2, tp:37.1, year:"Jr", conf:"C-USA", gem:92 },
+  { name:"DeShawn Watkins", school:"Georgia State", pos:"SG", ppg:14.8, rpg:4.7, apg:2.3, fg:46.1, tp:39.8, year:"Sr", conf:"Sun Belt", gem:88 },
+  { name:"Jaylen Torres", school:"Loyola Chicago", pos:"SF", ppg:12.4, rpg:6.9, apg:1.8, fg:51.3, tp:34.2, year:"Jr", conf:"MVC", gem:85 },
+  { name:"Cameron Wright", school:"Ohio", pos:"PG", ppg:13.7, rpg:2.8, apg:6.4, fg:42.8, tp:36.5, year:"So", conf:"MAC", gem:83 },
+  { name:"Terrence Mitchell", school:"Cleveland State", pos:"PF", ppg:11.9, rpg:8.2, apg:1.2, fg:54.7, tp:29.3, year:"Sr", conf:"Horizon", gem:81 },
+  { name:"Andre Phillips", school:"Towson", pos:"SG", ppg:17.3, rpg:3.4, apg:2.9, fg:43.5, tp:40.2, year:"Jr", conf:"CAA", gem:79 },
+  { name:"Isaiah Banks", school:"Radford", pos:"PF", ppg:10.8, rpg:7.6, apg:1.4, fg:56.2, tp:31.8, year:"Jr", conf:"Big South", gem:77 },
+  { name:"Malik Henderson", school:"Bellarmine", pos:"C", ppg:9.2, rpg:9.1, apg:1.0, fg:58.4, tp:0, year:"Sr", conf:"ASUN", gem:76 },
+  { name:"Jordan Blake", school:"McNeese", pos:"SG", ppg:15.6, rpg:3.9, apg:3.1, fg:41.7, tp:38.4, year:"Jr", conf:"Southland", gem:74 },
+  { name:"Tyler Robinson", school:"SE Missouri", pos:"PG", ppg:14.1, rpg:2.6, apg:5.2, fg:40.9, tp:35.7, year:"Sr", conf:"OVC", gem:71 },
+  { name:"KJ Washington", school:"New Mexico State", pos:"SF", ppg:11.3, rpg:5.8, apg:2.0, fg:48.6, tp:33.1, year:"So", conf:"WAC", gem:69 },
+  { name:"Davon Marshall", school:"South Dakota State", pos:"PG", ppg:12.9, rpg:3.2, apg:4.7, fg:43.1, tp:38.9, year:"Jr", conf:"Summit", gem:67 },
+  { name:"Elijah Cooper", school:"Bucknell", pos:"SF", ppg:13.5, rpg:5.1, apg:2.2, fg:45.8, tp:36.3, year:"Sr", conf:"Patriot", gem:65 },
+  { name:"Jace Williams", school:"FDU", pos:"C", ppg:8.7, rpg:8.8, apg:0.8, fg:55.9, tp:0, year:"Jr", conf:"NEC", gem:63 },
+  { name:"Nate Dawson", school:"Montana", pos:"SG", ppg:16.8, rpg:4.1, apg:2.6, fg:44.9, tp:41.3, year:"Sr", conf:"Big Sky", gem:61 },
+  { name:"Chris Saunders", school:"Jacksonville State", pos:"PF", ppg:10.2, rpg:7.3, apg:1.1, fg:52.4, tp:28.6, year:"So", conf:"ASUN", gem:58 },
+  { name:"Rasheed Coleman", school:"UAB", pos:"PG", ppg:11.4, rpg:2.4, apg:4.9, fg:41.3, tp:34.8, year:"Jr", conf:"C-USA", gem:55 },
+  { name:"Diego Martinez", school:"UTEP", pos:"SG", ppg:13.1, rpg:3.7, apg:2.4, fg:43.6, tp:37.4, year:"Sr", conf:"C-USA", gem:52 },
+  { name:"Anthony Price", school:"Northern Kentucky", pos:"PF", ppg:9.8, rpg:6.4, apg:1.3, fg:50.2, tp:30.7, year:"Jr", conf:"Horizon", gem:48 },
+  { name:"Trevon Gray", school:"Appalachian State", pos:"C", ppg:8.4, rpg:7.9, apg:0.9, fg:57.1, tp:0, year:"So", conf:"Sun Belt", gem:44 }
+];
+
+const gemSpotlights = [
+  {
+    name:"Marcus Jeffries", school:"Western Kentucky", pos:"PG · Junior · 6'1\"",
+    gem:92, ppg:16.2, apg:5.8, fg:"44.2%",
+    insight:"Top 3% in assist rate among C-USA guards. Per-36 numbers (19.4 PPG / 6.9 APG) rival high-major starters. Unranked by 247 — zero P5 offers despite elite creation metrics."
+  },
+  {
+    name:"DeShawn Watkins", school:"Georgia State", pos:"SG · Senior · 6'4\"",
+    gem:88, ppg:14.8, tp:"39.8%", rpg:4.7,
+    insight:"Shot 39.8% from three on 6.2 attempts per game — top 5% volume+efficiency combo in Sun Belt history. Plus-defender with 1.4 steals/game. Classic 3-and-D profile overlooked at mid-major level."
+  },
+  {
+    name:"Jaylen Torres", school:"Loyola Chicago", pos:"SF · Junior · 6'7\"",
+    gem:85, ppg:12.4, rpg:6.9, fg:"51.3%",
+    insight:"Elite efficiency: 51.3% FG as a wing in the MVC. PER of 24.1 ranks top 8% nationally. Versatile defender switching 1-4. Advanced metrics suggest top-100 player nationally but has zero high-major buzz."
+  },
+  {
+    name:"Cameron Wright", school:"Ohio", pos:"PG · Sophomore · 6'3\"",
+    gem:83, ppg:13.7, apg:6.4, tp:"36.5%",
+    insight:"Only sophomore in the MAC averaging 13+ PPG and 6+ APG. Turnover rate of just 12.8% is absurdly low for his usage. Two years of eligibility remaining — enormous upside play for any program."
+  }
+];
+
+const intlProspects = [
+  {
+    name:"Luka Petrović", country:"🇷🇸", flag:"🇷🇸", club:"KK Mega Basket (ABA League)", age:20,
+    stats:{ppg:"14.2", rpg:"5.8", apg:"3.1", fg:"47.3%"},
+    equiv:"NCAA-equivalent: ~11.8 PPG / 4.9 RPG / 2.6 APG — comparable to mid-major All-Conference wing"
+  },
+  {
+    name:"Théo Dupont", country:"🇫🇷", flag:"🇫🇷", club:"ASVEL Espoirs (LNB Pro B)", age:19,
+    stats:{ppg:"11.6", rpg:"2.1", apg:"5.4", fg:"44.1%"},
+    equiv:"NCAA-equivalent: ~10.2 PPG / 4.8 APG — elite playmaking translates; adjustment factor 0.88x"
+  },
+  {
+    name:"Mateo Fernández", country:"🇦🇷", flag:"🇦🇷", club:"San Lorenzo (Liga Nacional)", age:21,
+    stats:{ppg:"9.8", rpg:"7.2", apg:"1.3", fg:"52.8%"},
+    equiv:"NCAA-equivalent: ~8.4 PPG / 6.2 RPG — physical, efficient big. Liga Nacional competition level ≈ strong mid-major"
+  },
+  {
+    name:"Kwame Asante", country:"🇬🇭", flag:"🇬🇭", club:"Stella Artois Leuven (BNXT)", age:19,
+    stats:{ppg:"8.4", rpg:"4.6", apg:"1.8", fg:"49.2%"},
+    equiv:"NCAA-equivalent: ~7.6 PPG / 4.1 RPG — raw athleticism + 7'1\" wingspan; highest-ceiling prospect on the board"
+  },
+  {
+    name:"Nikola Vučić", country:"🇲🇪", flag:"🇲🇪", club:"Budućnost II (ABA League 2)", age:20,
+    stats:{ppg:"12.7", rpg:"8.9", apg:"1.1", fg:"55.4%"},
+    equiv:"NCAA-equivalent: ~10.3 PPG / 7.2 RPG — dominant rebounder in ABA feeder system; projects as double-double threat"
+  }
+];
+
+const rosterFitData = {
+  uab: {
+    name:"UAB Blazers",
+    needs:["PG","PF"],
+    matches:[
+      {name:"Marcus Jeffries",school:"Western Kentucky",pos:"PG",fit:97,reason:"Elite playmaker fills graduating PG gap",tags:["Primary Need","High Gem"]},
+      {name:"Cameron Wright",school:"Ohio",pos:"PG",fit:91,reason:"Young PG with 2 years left — long-term solution",tags:["Primary Need","Upside"]},
+      {name:"Isaiah Banks",school:"Radford",pos:"PF",fit:85,reason:"Physical 4-man fills frontcourt depth need",tags:["Secondary Need","Efficiency"]},
+      {name:"Jaylen Torres",school:"Loyola Chicago",pos:"SF",fit:78,reason:"Versatile wing adds scoring punch off bench",tags:["Versatility","High Gem"]}
+    ]
+  },
+  vcu: {
+    name:"VCU Rams",
+    needs:["SG","C"],
+    matches:[
+      {name:"DeShawn Watkins",school:"Georgia State",pos:"SG",fit:95,reason:"3-and-D wing fits Havoc system perfectly",tags:["Primary Need","High Gem"]},
+      {name:"Andre Phillips",school:"Towson",pos:"SG",fit:88,reason:"Volume scorer adds perimeter firepower",tags:["Primary Need","Scoring"]},
+      {name:"Malik Henderson",school:"Bellarmine",pos:"C",fit:82,reason:"Rim protector and rebounder for paint presence",tags:["Secondary Need","Defense"]},
+      {name:"Nate Dawson",school:"Montana",pos:"SG",fit:76,reason:"Experienced shooter with playoff pedigree",tags:["Depth","Shooting"]}
+    ]
+  },
+  loyola: {
+    name:"Loyola Chicago Ramblers",
+    needs:["PG","SF"],
+    matches:[
+      {name:"Davon Marshall",school:"South Dakota State",pos:"PG",fit:90,reason:"Summit League PG fits patient MVC offense",tags:["Primary Need","Tempo Fit"]},
+      {name:"KJ Washington",school:"New Mexico State",pos:"SF",fit:84,reason:"Athletic wing adds transition scoring",tags:["Secondary Need","Upside"]},
+      {name:"Tyler Robinson",school:"SE Missouri",pos:"PG",fit:79,reason:"Experienced floor general with low turnover rate",tags:["Primary Need","Safety"]},
+      {name:"Elijah Cooper",school:"Bucknell",pos:"SF",fit:73,reason:"Smart, efficient wing from academic program",tags:["Culture Fit","Efficiency"]}
+    ]
+  },
+  mtsu: {
+    name:"Middle Tennessee Blue Raiders",
+    needs:["SG","PF"],
+    matches:[
+      {name:"Jordan Blake",school:"McNeese",pos:"SG",fit:92,reason:"Southland sharpshooter ready to step up in C-USA",tags:["Primary Need","Shooting"]},
+      {name:"Terrence Mitchell",school:"Cleveland State",pos:"PF",fit:87,reason:"Experienced big with elite FG% fills interior need",tags:["Secondary Need","Efficiency"]},
+      {name:"DeShawn Watkins",school:"Georgia State",pos:"SG",fit:81,reason:"Sun Belt standout has C-USA familiarity",tags:["Primary Need","Conference Fit"]},
+      {name:"Chris Saunders",school:"Jacksonville State",pos:"PF",fit:75,reason:"Young, physical PF with ASUN experience",tags:["Secondary Need","Upside"]}
+    ]
+  },
+  ohio: {
+    name:"Ohio Bobcats",
+    needs:["SF","C"],
+    matches:[
+      {name:"Jaylen Torres",school:"Loyola Chicago",pos:"SF",fit:94,reason:"Elite MVC wing adds immediate scoring impact",tags:["Primary Need","High Gem"]},
+      {name:"Jace Williams",school:"FDU",pos:"C",fit:86,reason:"Shot-blocking center brings rim protection",tags:["Secondary Need","Defense"]},
+      {name:"Elijah Cooper",school:"Bucknell",pos:"SF",fit:80,reason:"Patriot League wing brings IQ and efficiency",tags:["Primary Need","Smart Player"]},
+      {name:"Trevon Gray",school:"Appalachian State",pos:"C",fit:72,reason:"Young big man with Sun Belt experience",tags:["Secondary Need","Development"]}
+    ]
+  },
+  uncw: {
+    name:"UNC Wilmington Seahawks",
+    needs:["PG","SG"],
+    matches:[
+      {name:"Marcus Jeffries",school:"Western Kentucky",pos:"PG",fit:93,reason:"C-USA playmaker fits CAA pace perfectly",tags:["Primary Need","High Gem"]},
+      {name:"Diego Martinez",school:"UTEP",pos:"SG",fit:85,reason:"Experienced C-USA guard adds backcourt depth",tags:["Secondary Need","Experience"]},
+      {name:"Nate Dawson",school:"Montana",pos:"SG",fit:80,reason:"Elite shooter fills perimeter scoring gap",tags:["Secondary Need","Shooting"]},
+      {name:"Davon Marshall",school:"South Dakota State",pos:"PG",fit:74,reason:"Summit League floor general brings leadership",tags:["Primary Need","Leadership"]}
+    ]
+  },
+  belmont: {
+    name:"Belmont Bruins",
+    needs:["PF","C"],
+    matches:[
+      {name:"Terrence Mitchell",school:"Cleveland State",pos:"PF",fit:91,reason:"Horizon League PF fits Belmont's efficient offense",tags:["Primary Need","Conference Fit"]},
+      {name:"Isaiah Banks",school:"Radford",pos:"PF",fit:86,reason:"Physical forward adds toughness inside",tags:["Primary Need","Physicality"]},
+      {name:"Malik Henderson",school:"Bellarmine",pos:"C",fit:83,reason:"ASUN center familiar with Belmont's system",tags:["Secondary Need","Familiarity"]},
+      {name:"Anthony Price",school:"Northern Kentucky",pos:"PF",fit:77,reason:"Horizon League experience translates well",tags:["Primary Need","Ready Now"]}
+    ]
+  },
+  drake: {
+    name:"Drake Bulldogs",
+    needs:["SG","PF"],
+    matches:[
+      {name:"Andre Phillips",school:"Towson",pos:"SG",fit:89,reason:"Volume scorer upgrades backcourt production",tags:["Primary Need","Scoring"]},
+      {name:"DeShawn Watkins",school:"Georgia State",pos:"SG",fit:84,reason:"3-and-D profile fits MVC physicality",tags:["Primary Need","Two-Way"]},
+      {name:"Isaiah Banks",school:"Radford",pos:"PF",fit:79,reason:"Efficient forward adds frontcourt balance",tags:["Secondary Need","Efficiency"]},
+      {name:"Jordan Blake",school:"McNeese",pos:"SG",fit:73,reason:"Scoring guard brings offensive versatility",tags:["Primary Need","Offense"]}
+    ]
+  }
+};
+
+// ── RENDER FUNCTIONS ──
+function getGemTier(score){
+  if(score>=80) return 'elite';
+  if(score>=65) return 'high';
+  if(score>=50) return 'mid';
+  return 'low';
+}
+
+function getInitials(name){
+  return name.split(' ').map(n=>n[0]).join('');
+}
+
+function renderPortalTable(players){
+  const tbody = document.getElementById('portalBody');
+  tbody.innerHTML = players.map(p => {
+    const tier = getGemTier(p.gem);
+    return `<tr data-pos="${p.pos}" data-conf="${p.conf}" data-gem="${p.gem}">
+      <td><div class="player-name"><div class="player-avatar">${getInitials(p.name)}</div>${p.name}${p.gem>=75?' <span class="gem-label">💎 GEM</span>':''}</div></td>
+      <td class="school-tag">${p.school}</td>
+      <td><span class="pos-badge">${p.pos}</span></td>
+      <td><div class="gem-score gem-tier-${tier}"><div class="gem-bar"><div class="gem-bar-fill" style="width:${p.gem}%"></div></div>${p.gem}</div></td>
+      <td class="stat-val ${p.ppg>=15?'highlight':''}">${p.ppg.toFixed(1)}</td>
+      <td class="stat-val ${p.rpg>=7?'highlight':''}">${p.rpg.toFixed(1)}</td>
+      <td class="stat-val ${p.apg>=5?'highlight':''}">${p.apg.toFixed(1)}</td>
+      <td class="stat-val">${p.fg.toFixed(1)}%</td>
+      <td class="stat-val">${p.tp>0?p.tp.toFixed(1)+'%':'—'}</td>
+      <td><span class="year-tag">${p.year}</span></td>
+      <td class="conf-tag">${p.conf}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderGemSpotlights(){
+  const grid = document.getElementById('gemsGrid');
+  grid.innerHTML = gemSpotlights.map(g => {
+    const circ = 2*Math.PI*22;
+    const offset = circ - (g.gem/100)*circ;
+    const stats = [
+      {val:g.ppg,label:'PPG'},
+      {val:g.apg||g.rpg,label:g.apg?'APG':'RPG'},
+      {val:g.fg||g.tp,label:g.fg?'FG%':'3P%'}
+    ];
+    return `<div class="gem-card">
+      <div class="gem-card-header">
+        <div class="gem-player-info">
+          <div class="gem-avatar">${getInitials(g.name)}</div>
+          <div>
+            <div class="gem-player-name">${g.name}</div>
+            <div class="gem-player-meta">${g.school} · ${g.pos}</div>
+          </div>
+        </div>
+        <div class="gem-score-ring">
+          <svg viewBox="0 0 52 52">
+            <circle class="bg" cx="26" cy="26" r="22"/>
+            <circle class="fg" cx="26" cy="26" r="22"
+              stroke-dasharray="${circ.toFixed(1)}"
+              stroke-dashoffset="${offset.toFixed(1)}"/>
+          </svg>
+          <div class="gem-score-value">${g.gem}</div>
+        </div>
+      </div>
+      <div class="gem-stats">
+        ${stats.map(s=>`<div class="gem-stat"><div class="gem-stat-val">${s.val}</div><div class="gem-stat-label">${s.label}</div></div>`).join('')}
+      </div>
+      <div class="gem-insight">
+        <div class="gem-insight-label">Why This Player?</div>
+        <div class="gem-insight-text">${g.insight}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderInternational(){
+  const grid = document.getElementById('intlGrid');
+  grid.innerHTML = intlProspects.map(p => `
+    <div class="intl-card">
+      <div class="intl-header">
+        <div class="intl-flag">${p.flag}</div>
+        <div>
+          <div class="intl-name">${p.name}</div>
+          <div class="intl-meta">${p.club} · Age ${p.age}</div>
+        </div>
+      </div>
+      <div class="intl-stats">
+        <div class="intl-stat"><div class="intl-stat-val">${p.stats.ppg}</div><div class="intl-stat-label">PPG</div></div>
+        <div class="intl-stat"><div class="intl-stat-val">${p.stats.rpg}</div><div class="intl-stat-label">RPG</div></div>
+        <div class="intl-stat"><div class="intl-stat-val">${p.stats.apg}</div><div class="intl-stat-label">APG</div></div>
+        <div class="intl-stat"><div class="intl-stat-val">${p.stats.fg}</div><div class="intl-stat-label">FG%</div></div>
+      </div>
+      <div class="intl-equiv">📊 ${p.equiv}</div>
+    </div>
+  `).join('');
+}
+
+function updateRosterFit(){
+  const program = document.getElementById('programSelect').value;
+  const needPos = document.getElementById('needSelect').value;
+  const container = document.getElementById('rosterResults');
+
+  if(!program){
+    container.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted);font-size:14px">Select a program above to see recommended portal fits</div>';
+    return;
+  }
+
+  const data = rosterFitData[program];
+  let matches = data.matches;
+  if(needPos){
+    matches = matches.filter(m=>m.pos===needPos);
+    if(matches.length===0) matches = data.matches.slice(0,2);
+  }
+
+  container.innerHTML = matches.map(m => {
+    const tierClass = m.fit>=90?'match-excellent':m.fit>=80?'match-good':'match-decent';
+    return `<div class="roster-match">
+      <div class="match-score ${tierClass}">${m.fit}</div>
+      <div class="match-info">
+        <h4>${m.name}</h4>
+        <p>${m.school} · ${m.pos} — ${m.reason}</p>
+        <div class="match-tags">
+          ${m.tags.map(t=>`<span class="match-tag ${t.includes('Need')?'need':'fit'}">${t}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SORTING & FILTERING ──
+let currentSort = {col:3, dir:'desc'};
+let gemFilterActive = false;
+
+function sortTable(col){
+  const ths = document.querySelectorAll('.portal-table th');
+  ths.forEach(th=>th.classList.remove('sorted'));
+  ths[col].classList.add('sorted');
+
+  if(currentSort.col === col){
+    currentSort.dir = currentSort.dir==='desc'?'asc':'desc';
+  } else {
+    currentSort.col = col;
+    currentSort.dir = 'desc';
+  }
+
+  const keys = ['name','school','pos','gem','ppg','rpg','apg','fg','tp','year','conf'];
+  const key = keys[col];
+  const sorted = [...portalPlayers].sort((a,b)=>{
+    let va=a[key], vb=b[key];
+    if(typeof va==='string') return currentSort.dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    return currentSort.dir==='asc'?va-vb:vb-va;
+  });
+  renderPortalTable(applyFilters(sorted));
+}
+
+function applyFilters(players){
+  const search = document.getElementById('playerSearch').value.toLowerCase();
+  const pos = document.getElementById('posFilter').value;
+  const conf = document.getElementById('confFilter').value;
+
+  return players.filter(p=>{
+    if(search && !p.name.toLowerCase().includes(search) && !p.school.toLowerCase().includes(search) && !p.conf.toLowerCase().includes(search)) return false;
+    if(pos && p.pos!==pos) return false;
+    if(conf && p.conf!==conf) return false;
+    if(gemFilterActive && p.gem<70) return false;
+    return true;
+  });
+}
+
+function filterTable(){
+  const keys = ['name','school','pos','gem','ppg','rpg','apg','fg','tp','year','conf'];
+  const key = keys[currentSort.col];
+  const sorted = [...portalPlayers].sort((a,b)=>{
+    let va=a[key], vb=b[key];
+    if(typeof va==='string') return currentSort.dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    return currentSort.dir==='asc'?va-vb:vb-va;
+  });
+  renderPortalTable(applyFilters(sorted));
+}
+
+function toggleGemFilter(){
+  gemFilterActive = !gemFilterActive;
+  document.getElementById('gemFilterBtn').classList.toggle('active', gemFilterActive);
+  filterTable();
+}
+
+function scrollToSection(id){
+  document.querySelectorAll('.nav-pill').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── INIT ──
+renderPortalTable(portalPlayers);
+renderGemSpotlights();
+renderInternational();
+
+// Animate gem bars on load
+setTimeout(()=>{
+  document.querySelectorAll('.gem-bar-fill').forEach(el=>{
+    el.style.width = el.style.width;
+  });
+},100);
+</script>
+
+</body>
+</html>
