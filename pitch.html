@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Courtside Analytics — Moneyball for College Basketball</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0c10;
+  --bg-card:#161a24;
+  --bg-surface:#1e2233;
+  --border:#252a3a;
+  --text:#e8eaf0;
+  --text-dim:#8b91a8;
+  --text-muted:#565d78;
+  --orange:#f97316;
+  --orange-dim:rgba(249,115,22,0.15);
+  --cyan:#22d3ee;
+  --cyan-dim:rgba(34,211,238,0.1);
+  --emerald:#34d399;
+  --emerald-dim:rgba(52,211,153,0.1);
+  --rose:#fb7185;
+  --font-display:'Bebas Neue',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html{background:var(--bg);scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.4;
+}
+.glow-1{
+  position:fixed;top:-200px;right:-100px;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.glow-2{
+  position:fixed;bottom:-200px;left:-100px;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(34,211,238,0.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+.page{
+  max-width:860px;margin:0 auto;padding:60px 32px 80px;
+  position:relative;z-index:1;
+}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{opacity:0;animation:fadeUp 0.6s ease forwards}
+.fade-up:nth-child(2){animation-delay:0.08s}
+.fade-up:nth-child(3){animation-delay:0.16s}
+.fade-up:nth-child(4){animation-delay:0.24s}
+.fade-up:nth-child(5){animation-delay:0.32s}
+.fade-up:nth-child(6){animation-delay:0.40s}
+.fade-up:nth-child(7){animation-delay:0.48s}
+.fade-up:nth-child(8){animation-delay:0.56s}
+.fade-up:nth-child(9){animation-delay:0.64s}
+.fade-up:nth-child(10){animation-delay:0.72s}
+
+/* Header / Hero */
+.hero{text-align:center;margin-bottom:56px}
+.logo{
+  display:inline-flex;align-items:center;gap:14px;
+  margin-bottom:32px;
+}
+.logo-mark{
+  width:48px;height:48px;
+  background:linear-gradient(135deg,var(--orange),#ea580c);
+  border-radius:12px;display:grid;place-items:center;
+  font-family:var(--font-display);font-size:28px;color:#fff;
+  box-shadow:0 0 30px rgba(249,115,22,0.3);
+}
+.logo-text-wrap{text-align:left}
+.logo-name{
+  font-family:var(--font-display);
+  font-size:32px;letter-spacing:3px;color:var(--text);line-height:1;
+}
+.logo-sub{
+  font-family:var(--font-mono);font-size:10px;
+  letter-spacing:2px;color:var(--text-muted);
+  text-transform:uppercase;margin-top:2px;
+}
+.hero h1{
+  font-family:var(--font-display);
+  font-size:clamp(40px,7vw,72px);
+  letter-spacing:4px;line-height:1.05;
+  color:var(--text);margin-bottom:20px;
+}
+.hero h1 .accent{color:var(--orange)}
+.hero .subtitle{
+  font-size:18px;color:var(--text-dim);
+  font-weight:400;max-width:580px;margin:0 auto;
+  line-height:1.6;
+}
+
+/* Divider */
+.divider{
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--border),transparent);
+  margin:48px 0;
+}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-label{
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--orange);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::before{
+  content:'';width:20px;height:1px;background:var(--orange);
+}
+.section h2{
+  font-family:var(--font-display);
+  font-size:36px;letter-spacing:3px;
+  color:var(--text);line-height:1.1;
+  margin-bottom:16px;
+}
+.section p{
+  font-size:16px;color:var(--text-dim);
+  line-height:1.7;margin-bottom:12px;
+}
+.section p strong{color:var(--text);font-weight:600}
+
+/* Stats callout */
+.stat-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--border);border-radius:12px;
+  overflow:hidden;margin:32px 0;
+}
+.stat-item{
+  background:var(--bg-card);padding:28px 24px;text-align:center;
+  position:relative;overflow:hidden;
+  transition:background 0.3s;
+}
+.stat-item:hover{background:#1c2130}
+.stat-item::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--orange),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.stat-item:hover::before{opacity:1}
+.stat-num{
+  font-family:var(--font-display);font-size:44px;
+  letter-spacing:2px;color:var(--text);line-height:1;
+}
+.stat-num .hl{color:var(--orange)}
+.stat-desc{
+  font-size:11px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--text-muted);
+  margin-top:8px;font-weight:500;
+}
+
+/* Feature cards */
+.features{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin:32px 0;
+}
+.feature-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;padding:28px;
+  transition:all 0.3s ease;
+  position:relative;overflow:hidden;
+}
+.feature-card:hover{
+  border-color:#2d3348;
+  transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+.feature-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  border-radius:12px 12px 0 0;
+}
+.feature-card:nth-child(1)::before{background:var(--orange)}
+.feature-card:nth-child(2)::before{background:var(--cyan)}
+.feature-card:nth-child(3)::before{background:var(--emerald)}
+.feature-card:nth-child(4)::before{background:var(--rose)}
+.feature-icon{
+  font-size:24px;margin-bottom:14px;
+  width:44px;height:44px;border-radius:10px;
+  display:grid;place-items:center;
+}
+.feature-card:nth-child(1) .feature-icon{background:var(--orange-dim)}
+.feature-card:nth-child(2) .feature-icon{background:var(--cyan-dim)}
+.feature-card:nth-child(3) .feature-icon{background:var(--emerald-dim)}
+.feature-card:nth-child(4) .feature-icon{background:rgba(251,113,133,0.1)}
+.feature-card h3{
+  font-family:var(--font-display);font-size:22px;
+  letter-spacing:2px;color:var(--text);
+  margin-bottom:8px;
+}
+.feature-card p{
+  font-size:14px;color:var(--text-dim);line-height:1.6;margin:0;
+}
+
+/* Comparison table */
+.compare-table{
+  width:100%;border-collapse:collapse;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  margin:24px 0;
+}
+.compare-table th{
+  padding:14px 16px;
+  font-family:var(--font-mono);font-size:10px;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-muted);font-weight:600;
+  text-align:center;
+  background:#12151c;
+  border-bottom:1px solid var(--border);
+}
+.compare-table th:first-child{text-align:left}
+.compare-table th:last-child{color:var(--orange)}
+.compare-table td{
+  padding:12px 16px;font-size:14px;
+  text-align:center;color:var(--text-dim);
+  border-bottom:1px solid rgba(37,42,58,0.4);
+}
+.compare-table td:first-child{
+  text-align:left;color:var(--text);font-weight:500;
+  font-size:13px;
+}
+.compare-table td:last-child{color:var(--text)}
+.compare-table tr:last-child td{border-bottom:none}
+.check{color:var(--emerald);font-weight:700}
+.cross{color:var(--text-muted);font-size:12px}
+.partial{color:var(--text-muted);font-size:12px;font-style:italic}
+
+/* Pricing */
+.pricing-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  margin:28px 0;
+}
+.price-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:12px;padding:28px;text-align:center;
+  transition:all 0.3s;position:relative;
+}
+.price-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.price-card.featured{
+  border-color:rgba(249,115,22,0.3);
+  background:linear-gradient(to bottom,rgba(249,115,22,0.05),var(--bg-card));
+}
+.price-card.featured::before{
+  content:'MOST POPULAR';position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:9px;letter-spacing:2px;
+  color:var(--orange);background:var(--bg);
+  padding:4px 14px;border-radius:0 0 8px 8px;
+  border:1px solid rgba(249,115,22,0.3);border-top:none;
+}
+.price-name{
+  font-family:var(--font-display);font-size:24px;
+  letter-spacing:2px;color:var(--text);margin-bottom:4px;
+}
+.price-amount{
+  font-family:var(--font-display);font-size:42px;
+  color:var(--text);letter-spacing:1px;margin:12px 0 4px;
+}
+.price-amount span{font-size:16px;color:var(--text-muted);font-family:var(--font-body);letter-spacing:0}
+.price-desc{
+  font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.5;
+}
+.price-features{
+  list-style:none;text-align:left;
+}
+.price-features li{
+  padding:8px 0;font-size:13px;color:var(--text-dim);
+  border-bottom:1px solid rgba(37,42,58,0.3);
+  display:flex;align-items:center;gap:8px;
+}
+.price-features li:last-child{border-bottom:none}
+.price-features li::before{content:'✓';color:var(--emerald);font-weight:700;font-size:12px}
+
+/* CTA */
+.cta-section{
+  text-align:center;margin-top:56px;
+  padding:48px 32px;
+  background:linear-gradient(to bottom,rgba(249,115,22,0.04),transparent);
+  border:1px solid rgba(249,115,22,0.15);
+  border-radius:16px;
+  position:relative;overflow:hidden;
+}
+.cta-section::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--orange),transparent);
+}
+.cta-section h2{
+  font-family:var(--font-display);font-size:40px;
+  letter-spacing:3px;margin-bottom:12px;
+}
+.cta-section p{font-size:16px;color:var(--text-dim);margin-bottom:28px}
+.cta-btn{
+  display:inline-block;
+  padding:16px 40px;
+  background:linear-gradient(135deg,var(--orange),#ea580c);
+  color:#fff;font-family:var(--font-display);
+  font-size:20px;letter-spacing:3px;
+  border-radius:10px;text-decoration:none;
+  box-shadow:0 0 30px rgba(249,115,22,0.25);
+  transition:all 0.3s;
+}
+.cta-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 40px rgba(249,115,22,0.4);
+}
+.cta-fine{
+  font-family:var(--font-mono);font-size:11px;
+  color:var(--text-muted);margin-top:16px;letter-spacing:0.5px;
+}
+
+/* Footer */
+.footer{
+  text-align:center;margin-top:64px;
+  padding-top:32px;
+  border-top:1px solid var(--border);
+}
+.footer p{
+  font-size:13px;color:var(--text-muted);
+  line-height:1.6;font-style:italic;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  .page{padding:40px 20px 60px}
+  .stat-strip{grid-template-columns:1fr}
+  .features{grid-template-columns:1fr}
+  .pricing-grid{grid-template-columns:1fr}
+  .compare-table{font-size:12px}
+  .compare-table th,.compare-table td{padding:10px 8px}
+}
+</style>
+</head>
+<body>
+
+<div class="glow-1"></div>
+<div class="glow-2"></div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero fade-up">
+    <div class="logo">
+      <div class="logo-mark">C</div>
+      <div class="logo-text-wrap">
+        <div class="logo-name">COURTSIDE</div>
+        <div class="logo-sub">Analytics</div>
+      </div>
+    </div>
+    <h1>MONEYBALL FOR<br>COLLEGE <span class="accent">BASKETBALL</span></h1>
+    <p class="subtitle">AI-powered recruiting intelligence that helps mid-major programs find undervalued talent across the transfer portal, JUCO, and international leagues.</p>
+  </div>
+
+  <div class="divider fade-up"></div>
+
+  <!-- The Problem -->
+  <div class="section fade-up">
+    <div class="section-label">The Problem</div>
+    <h2>THE PORTAL IS A FIREHOSE</h2>
+    <p>Every spring, <strong>2,300+ basketball players</strong> enter the NCAA transfer portal. Coaches have roughly two weeks to evaluate hundreds of candidates, identify fits, and make offers — all while competing against programs with 10x their budget.</p>
+    <p>Mid-major programs are outgunned. They can't afford enterprise scouting platforms. They don't have dedicated analytics staff. And they're chasing the same 50 "known" names as everyone else while <strong>hundreds of high-value players go completely unnoticed</strong>.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-strip fade-up">
+    <div class="stat-item">
+      <div class="stat-num">2,<span class="hl">320</span></div>
+      <div class="stat-desc">Portal entries in 2025</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span class="hl">280</span>+</div>
+      <div class="stat-desc">Mid-major D1 programs</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span class="hl">14</span> DAYS</div>
+      <div class="stat-desc">To evaluate & offer</div>
+    </div>
+  </div>
+
+  <div class="divider fade-up"></div>
+
+  <!-- Features -->
+  <div class="section fade-up">
+    <div class="section-label">The Solution</div>
+    <h2>FIND THE PLAYERS EVERYONE ELSE MISSES</h2>
+    <p>Courtside Analytics scores every available player across D1, D2, JUCO, NAIA, and 50+ international leagues — surfacing the talent traditional scouting misses.</p>
+  </div>
+
+  <div class="features fade-up">
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>HIDDEN GEM ENGINE</h3>
+      <p>Every portal entry scored 0-100 based on per-minute production, efficiency metrics, conference-adjusted performance, and improvement trajectory. Find the D2 guard putting up 18 PPG with elite efficiency before 247Sports notices.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌍</div>
+      <h3>INTERNATIONAL SCOUT</h3>
+      <p>Stats from 50+ international leagues translated into NCAA-comparable metrics. Build the pipeline Illinois has — without flying to Lithuania. Find the next Kasparas Jakucionis.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>ROSTER FIT ANALYSIS</h3>
+      <p>Tell us your roster gaps — a stretch 4 who shoots 37%+ from three, a point guard with 2.5+ AST/TO — and we filter every available player to match your specific needs.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>REAL-TIME ALERTS</h3>
+      <p>New portal entries instantly scored and delivered to your inbox. "5 new players match your program's needs" — every morning during the portal window. Never miss a target.</p>
+    </div>
+  </div>
+
+  <div class="divider fade-up"></div>
+
+  <!-- Competitive -->
+  <div class="section fade-up">
+    <div class="section-label">Why Courtside</div>
+    <h2>WHAT NOBODY ELSE DOES</h2>
+    <p>Synergy is the gold standard for game film but costs enterprise money. Portal Report covers the big names, not hidden value. EvanMiya has great D1 metrics but doesn't scout below D1 or internationally. <strong>Courtside fills the gap.</strong></p>
+  </div>
+
+  <table class="compare-table fade-up">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Synergy</th>
+        <th>Portal Report</th>
+        <th>EvanMiya</th>
+        <th>Courtside</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Transfer portal focus</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+        <td class="partial">Partial</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Hidden gem discovery</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>International scouting</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Predictive scoring</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="partial">Partial</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>D2 / JUCO / NAIA coverage</td>
+        <td class="cross">✗</td>
+        <td class="partial">Partial</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Mid-major pricing</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="divider fade-up"></div>
+
+  <!-- Pricing -->
+  <div class="section fade-up">
+    <div class="section-label">Pricing</div>
+    <h2>BUILT FOR MID-MAJOR BUDGETS</h2>
+  </div>
+
+  <div class="pricing-grid fade-up">
+    <div class="price-card">
+      <div class="price-name">STARTER</div>
+      <div class="price-amount">$500<span>/mo</span></div>
+      <div class="price-desc">Portal analytics essentials</div>
+      <ul class="price-features">
+        <li>Portal player rankings</li>
+        <li>Hidden Gem scores</li>
+        <li>Search & filter tools</li>
+        <li>Basic stat comparisons</li>
+      </ul>
+    </div>
+    <div class="price-card featured">
+      <div class="price-name">PRO</div>
+      <div class="price-amount">$1,000<span>/mo</span></div>
+      <div class="price-desc">Full recruiting intelligence</div>
+      <ul class="price-features">
+        <li>Everything in Starter</li>
+        <li>International talent module</li>
+        <li>Roster Fit analysis</li>
+        <li>Daily email alerts</li>
+        <li>API access</li>
+      </ul>
+    </div>
+    <div class="price-card">
+      <div class="price-name">ENTERPRISE</div>
+      <div class="price-amount">Custom</div>
+      <div class="price-desc">Multi-sport, custom models</div>
+      <ul class="price-features">
+        <li>Everything in Pro</li>
+        <li>Custom scoring models</li>
+        <li>Dedicated support</li>
+        <li>Multi-sport coverage</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider fade-up"></div>
+
+  <!-- CTA -->
+  <div class="cta-section fade-up">
+    <h2>JOIN THE PILOT PROGRAM</h2>
+    <p>We're looking for <strong>5 coaching staffs</strong> to pilot Courtside Analytics during the April 2026 portal window — free for the first month.</p>
+    <a href="https://courtside-analytics.vercel.app" class="cta-btn">VIEW LIVE DEMO →</a>
+    <p class="cta-fine">30 minutes of your feedback in exchange for a month of free access.</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer fade-up">
+    <p>"Every program deserves access to the same intelligence that blue bloods take for granted."</p>
+  </div>
+
+</div>
+
+<script>
+// Intersection Observer for staggered reveal
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.animationPlayState = 'running';
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-up').forEach(el => {
+  el.style.animationPlayState = 'paused';
+  obs.observe(el);
+});
+</script>
+
+</body>
+</html>
